@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookmark Manager</title><!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script><!-- DM Sans Font from Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"><!-- Lucide Icons CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <style>
+    body {
+      font-family: 'DM Sans', sans-serif;
+    }
+    
+    /* Viewport height utility to match Canva iframe runtime requirements */
+    .dynamic-height {
+      min-height: calc(100 * min(var(--vh, 1vh), 1vh));
+    }
+
+    /* Custom scrollbar styling for dynamic lists */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+  <script src="/_sdk/resizing_sdk.js" type="text/javascript"></script>
+ <script src="/_sdk/telemetry_sdk.js"></script></head>
+ <body data-template-id="app_root" class="dynamic-height w-full bg-slate-50 flex flex-col antialiased"><!-- App Header -->
+  <header data-template-id="app_header" class="canva-header border-b border-slate-200">
+   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div class="flex items-center gap-3">
+     <div class="p-2.5 bg-indigo-600 text-white rounded-xl shadow-md shadow-indigo-100"><i data-lucide="bookmark" class="w-6 h-6"></i>
+     </div>
+     <div>
+      <h1 data-template-id="app_title" class="canva-text text-xl font-bold tracking-tight"></h1>
+      <p data-template-id="app_subtitle" class="canva-text text-sm"></p>
+     </div>
+    </div><!-- Real-time Dashboard Stats -->
+    <div class="flex items-center gap-2 self-start sm:self-center">
+     <div class="px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-semibold text-slate-600 flex items-center gap-1.5 border border-slate-200"><span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span> <span data-template-id="stat_label_total" class="canva-text"></span> <span id="stat-total-count" class="text-indigo-600 font-bold ml-0.5">0</span>
+     </div>
+     <div class="px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-semibold text-slate-600 flex items-center gap-1.5 border border-slate-200"><span data-template-id="stat_label_limit" class="canva-text"></span> <span class="text-slate-500 ml-0.5">999</span>
+     </div>
+    </div>
+   </div>
+  </header><!-- Main Workspace Area -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8"><!-- Left Column: Add Bookmark Form -->
+   <section class="w-full lg:w-96 flex-shrink-0">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sticky top-6">
+     <h2 data-template-id="form_title" class="canva-text text-lg font-bold text-slate-950 mb-5 flex items-center gap-2"></h2>
+     <form id="add-bookmark-form" onsubmit="handleFormSubmit(event)" class="space-y-4"><!-- Title Input -->
+      <div><label data-template-id="label_title" for="bookmark-title" class="canva-text block text-xs font-bold tracking-wide uppercase mb-1.5"></label> <input id="bookmark-title" type="text" required maxlength="100" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm" placeholder="e.g. Khanjal Design Platform">
+      </div><!-- URL Input -->
+      <div><label data-template-id="label_url" for="bookmark-url" class="canva-text block text-xs font-bold tracking-wide uppercase mb-1.5"></label> <input id="bookmark-url" type="url" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm" placeholder="https://khanjal.com">
+      </div><!-- Category Selector -->
+      <div><label data-template-id="label_category" for="bookmark-category" class="canva-text block text-xs font-bold tracking-wide uppercase mb-1.5"></label>
+       <div class="relative"><select id="bookmark-category" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm appearance-none cursor-pointer"> <option value="Work">💼 Work</option> <option value="Personal">🏡 Personal</option> <option value="Inspiration">✨ Inspiration</option> <option value="Learning">📚 Learning</option> <option value="Entertainment">🍿 Entertainment</option> </select>
+        <div class="absolute inset-y-0 right-3.5 flex items-center pointer-events-none text-slate-400"><i data-lucide="chevron-down" class="w-4 h-4"></i>
+        </div>
+       </div>
+      </div><!-- 999 Limit Inline Danger Banner -->
+      <div id="limit-reached-banner" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-start gap-2.5"><i data-lucide="alert-circle" class="w-4 h-4 mt-0.5 flex-shrink-0 text-rose-600"></i>
+       <div>
+        <p data-template-id="limit_reached_msg" class="canva-text font-semibold"></p>
+        <p data-template-id="limit_reached_desc" class="canva-text text-rose-700/80 mt-0.5"></p>
+       </div>
+      </div><!-- Error Alert Banner -->
+      <div id="form-error-banner" class="hidden p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2.5"><i data-lucide="alert-circle" class="w-4 h-4 mt-0.5 flex-shrink-0 text-amber-600"></i> <span id="error-message-text" class="font-medium">Failed to save. Please try again.</span>
+      </div><!-- Submit Button --> <button id="submit-button" type="submit" data-template-id="submit_btn" class="canva-button w-full flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-bold text-sm shadow-sm hover:shadow active:scale-[0.98]"> <i data-lucide="plus" class="w-4 h-4"></i> <span id="submit-btn-text">Add Bookmark</span> <!-- Loading Spinner inside button -->
+       <svg id="submit-spinner" class="hidden animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle> <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+       </svg></button>
+     </form>
+    </div>
+   </section><!-- Right Column: Filters & Bookmark Cards -->
+   <section class="flex-1 flex flex-col gap-6"><!-- Filter and Search Row -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm"><!-- Interactive Category Selection Pills -->
+     <div id="category-filters" class="flex flex-wrap gap-1.5"><button onclick="setCategoryFilter('all')" id="filter-all" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-indigo-600 text-white shadow-sm shadow-indigo-100"> All </button> <button onclick="setCategoryFilter('Work')" id="filter-Work" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-all"> 💼 Work </button> <button onclick="setCategoryFilter('Personal')" id="filter-Personal" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-all"> 🏡 Personal </button> <button onclick="setCategoryFilter('Inspiration')" id="filter-Inspiration" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-all"> ✨ Inspiration </button> <button onclick="setCategoryFilter('Learning')" id="filter-Learning" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-all"> 📚 Learning </button> <button onclick="setCategoryFilter('Entertainment')" id="filter-Entertainment" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-all"> 🍿 Entertainment </button>
+     </div><!-- Search Input -->
+     <div class="relative w-full sm:w-64 flex-shrink-0"><i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i> <input id="search-input" type="text" oninput="handleSearch(event)" data-template-id="search_placeholder" class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-xs">
+     </div>
+    </div><!-- Loading State Panel -->
+    <div id="loading-state" class="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200">
+     <svg class="animate-spin h-8 w-8 text-indigo-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle> <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+     </svg><span data-template-id="loading_text" class="canva-text text-sm text-slate-500 font-medium"></span>
+    </div><!-- Bookmarks List Render Destination -->
+    <div id="bookmarks-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden"><!-- Bookmark Cards will populate here dynamically -->
+    </div><!-- Empty State Card -->
+    <div id="empty-state" class="hidden flex flex-col items-center justify-center text-center py-16 px-6 bg-white rounded-2xl border border-slate-200 shadow-sm">
+     <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 mb-4 border border-slate-200"><i data-lucide="info" class="w-8 h-8"></i>
+     </div>
+     <h3 data-template-id="empty_state_title" class="canva-text text-slate-950 font-bold text-lg mb-1.5"></h3>
+     <p data-template-id="empty_state_desc" class="canva-text text-slate-500 text-sm max-w-sm mb-6"></p>
+    </div>
+   </section>
+  </main><!-- Unbound Card Template used by Javascript Renderer -->
+  <template id="bookmark-card-template">
+   <div data-template-id="bookmark_card" class="canva-card group flex flex-col justify-between p-5 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200 relative overflow-hidden"><!-- Top Section -->
+    <div>
+     <div class="flex items-start justify-between gap-3 mb-3"><!-- Category Badge Container (Dynamic Class applied) --> <span class="category-badge px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider"></span> <!-- Static Icon indicator based on Category --> <span class="category-icon text-slate-400 text-sm"></span>
+     </div>
+     <h3 data-template-id="bookmark_card_title" class="canva-text font-bold text-slate-900 leading-snug line-clamp-2"></h3>
+     <p data-template-id="bookmark_card_url" class="canva-text text-xs text-indigo-600 font-medium break-all mt-1 line-clamp-1 hover:underline transition-all"></p>
+    </div><!-- Action Footer (Normal and Inline Safety Deletion modes combined via display toggling) -->
+    <div class="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between"><!-- Normal Card Footer Actions -->
+     <div class="normal-actions w-full flex items-center justify-between"><a class="visit-link inline-flex items-center gap-1 text-xs text-slate-500 hover:text-indigo-600 transition-all font-semibold" target="_blank" rel="noopener noreferrer"> <span data-template-id="card_action_visit" class="canva-text"></span> <i data-lucide="external-link" class="w-3.5 h-3.5"></i> </a> <!-- Trigger Delete Confirmation (safe, inline - no confirm window dialogs) --> <button type="button" class="trigger-delete-btn p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-all" title="Delete Bookmark"> <i data-lucide="trash-2" class="w-4 h-4"></i> </button>
+     </div><!-- Inline Safe Deletion Confirm Overlay (revealed inside card) -->
+     <div class="confirm-actions w-full hidden flex items-center justify-between"><span data-template-id="delete_confirmation_text" class="canva-text text-xs font-bold text-rose-600"></span>
+      <div class="flex items-center gap-2"><!-- Cancel Button --> <button type="button" class="cancel-delete-btn px-2.5 py-1 text-[10px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-md transition-all"> Cancel </button> <!-- Execute Deletion Button --> <button type="button" class="confirm-delete-btn px-2.5 py-1 text-[10px] font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-md transition-all shadow-sm"> Delete </button>
+      </div>
+     </div>
+    </div><!-- Loader Overlay (Only shown during active deletion) -->
+    <div class="loader-overlay absolute inset-0 bg-white/80 backdrop-blur-[1px] flex items-center justify-center hidden">
+     <svg class="animate-spin h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle> <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+     </svg>
+    </div>
+   </div>
+  </template><!-- Canva SDK and Custom Storage Scripts -->
+  <script src="/_sdk/editing_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <script>
+    // Local In-Memory State
+    let bookmarks = [];
+    let currentCategoryFilter = 'all';
+    let currentSearchTerm = '';
+    
+    // Category visual themes config
+    const categoryStyles = {
+      Work: {
+        badgeClass: "bg-emerald-50 text-emerald-700 border border-emerald-200/50",
+        icon: "💼"
+      },
+      Personal: {
+        badgeClass: "bg-amber-50 text-amber-700 border border-amber-200/50",
+        icon: "🏡"
+      },
+      Inspiration: {
+        badgeClass: "bg-purple-50 text-purple-700 border border-purple-200/50",
+        icon: "✨"
+      },
+      Learning: {
+        badgeClass: "bg-blue-50 text-blue-700 border border-blue-200/50",
+        icon: "📚"
+      },
+      Entertainment: {
+        badgeClass: "bg-rose-50 text-rose-700 border border-rose-200/50",
+        icon: "🍿"
+      }
+    };
+
+    // Data SDK Integration Handler implementing the DataHandler interface
+    const dataHandler = {
+      onDataChanged(newData) {
+        // Step 1: Update in-memory cached representation
+        // We sort new data descendingly based on created_at timestamp
+        bookmarks = newData.sort((a, b) => {
+          const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+          const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+          return dateB - dateA;
+        });
+
+        // Step 2: Clear any structural loading states
+        document.getElementById('loading-state').classList.add('hidden');
+        document.getElementById('bookmarks-container').classList.remove('hidden');
+
+        // Step 3: Trigger Selective DOM Synchronization
+        renderDashboard();
+      }
+    };
+
+    // Initializes Application State
+    document.addEventListener("DOMContentLoaded", async () => {
+      // Initialize Lucide iconography
+      lucide.createIcons();
+
+      try {
+        const initResult = await window.dataSdk.init(dataHandler);
+        if (!initResult.isOk) {
+          console.error("Initialization of storage backend failed:", initResult.error);
+          showGlobalError("Unable to establish safe connection to Canva Sheets.");
+        }
+      } catch (err) {
+        console.error("Critical failure initializing app:", err);
+        showGlobalError("System connection timed out. Refreshing might help.");
+      }
+    });
+
+    // Submits new bookmarks to Canva Sheet (Enforces limit + state loaders)
+    async function handleFormSubmit(event) {
+      event.preventDefault();
+
+      // Clear any prior validation failures
+      hideFormError();
+
+      const titleInput = document.getElementById('bookmark-title');
+      const urlInput = document.getElementById('bookmark-url');
+      const catInput = document.getElementById('bookmark-category');
+
+      const title = titleInput.value.trim();
+      const url = urlInput.value.trim();
+      const category = catInput.value;
+
+      // 1. Guard Limit Constraints (999 maximum entries safely)
+      if (bookmarks.length >= 999) {
+        showLimitWarningState();
+        return;
+      }
+
+      // 2. Set Button UI Loading State
+      setFormLoadingState(true);
+
+      const record = {
+        title: title,
+        url: url,
+        category: category,
+        created_at: new Date().toISOString()
+      };
+
+      try {
+        // Post-write to Canva Sheet
+        const response = await window.dataSdk.create(record);
+        
+        if (response.isOk) {
+          // Clear form elements cleanly
+          titleInput.value = '';
+          urlInput.value = '';
+          catInput.selectedIndex = 0;
+        } else {
+          showFormError("Failed to save. Ensure sheet is linked correctly.");
+        }
+      } catch (err) {
+        console.error("Async creation error:", err);
+        showFormError("System offline. Please check connection.");
+      } finally {
+        setFormLoadingState(false);
+      }
+    }
+
+    // Handles category filter toggle changes
+    function setCategoryFilter(category) {
+      currentCategoryFilter = category;
+      
+      // Update active styling across category filter pills
+      const filterContainer = document.getElementById('category-filters');
+      filterContainer.querySelectorAll('button').forEach(btn => {
+        if (btn.id === `filter-${category}`) {
+          btn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-indigo-600 text-white shadow-sm shadow-indigo-100";
+        } else {
+          btn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-all";
+        }
+      });
+
+      renderDashboard();
+    }
+
+    // Capture search text typing patterns
+    function handleSearch(event) {
+      currentSearchTerm = event.target.value.toLowerCase().trim();
+      renderDashboard();
+    }
+
+    // Core Dashboard DOM Renderer (Selective mapping strategy)
+    function renderDashboard() {
+      const container = document.getElementById('bookmarks-container');
+      const emptyState = document.getElementById('empty-state');
+      
+      // Apply filters based on live user selections (Memory filtering)
+      const filtered = bookmarks.filter(item => {
+        const matchesCategory = (currentCategoryFilter === 'all' || item.category === currentCategoryFilter);
+        const matchesSearch = (!currentSearchTerm || 
+          (item.title && item.title.toLowerCase().includes(currentSearchTerm)) || 
+          (item.url && item.url.toLowerCase().includes(currentSearchTerm))
+        );
+        return matchesCategory && matchesSearch;
+      });
+
+      // Update counters in layout
+      document.getElementById('stat-total-count').textContent = bookmarks.length;
+
+      // Limit checking safety triggers
+      if (bookmarks.length >= 999) {
+        showLimitWarningState();
+      } else {
+        hideLimitWarningState();
+      }
+
+      // Empty states routing
+      if (filtered.length === 0) {
+        container.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      container.classList.remove('hidden');
+
+      // Efficient DOM syncing: Track items currently drawn, updates differences
+      const renderedCardsMap = new Map();
+      [...container.children].forEach(child => {
+        renderedCardsMap.set(child.dataset.backendId, child);
+      });
+
+      // Maintain rendering target list cleanly
+      const currentIds = new Set(filtered.map(item => item.__backendId));
+
+      // Remove any items that are no longer present in storage query
+      renderedCardsMap.forEach((el, id) => {
+        if (!currentIds.has(id)) {
+          el.remove();
+        }
+      });
+
+      // Add/Re-index current items maintaining strict sequential order
+      const template = document.getElementById('bookmark-card-template');
+
+      filtered.forEach((item, index) => {
+        let cardElement = renderedCardsMap.get(item.__backendId);
+
+        if (!cardElement) {
+          // Clone template layout
+          const clone = template.content.cloneNode(true);
+          cardElement = clone.querySelector('[data-template-id="bookmark_card"]');
+          cardElement.dataset.backendId = item.__backendId;
+          
+          // Apply individual visual setups
+          setupCardInteractions(cardElement, item);
+          
+          // Append in correct order
+          if (index === 0) {
+            container.prepend(cardElement);
+          } else {
+            container.appendChild(cardElement);
+          }
+        } else {
+          // Re-update node positioning context if required
+          const currentNodes = [...container.children];
+          if (currentNodes[index] !== cardElement) {
+            container.insertBefore(cardElement, currentNodes[index]);
+          }
+        }
+      });
+
+      // Fire Lucide icons rebuild to render new icons added dynamically
+      lucide.createIcons();
+    }
+
+    // Configures individual interactions (safety double-checks, direct open commands)
+    function setupCardInteractions(card, item) {
+      // Categorization classes integration
+      const style = categoryStyles[item.category] || { badgeClass: "bg-slate-100 text-slate-700", icon: "🔗" };
+      
+      const badge = card.querySelector('.category-badge');
+      badge.textContent = item.category || 'Link';
+      badge.className = `category-badge px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${style.badgeClass}`;
+
+      const iconElement = card.querySelector('.category-icon');
+      iconElement.textContent = style.icon;
+
+      // Text mapping from payload
+      card.querySelector('[data-template-id="bookmark_card_title"]').textContent = item.title;
+      
+      const urlText = card.querySelector('[data-template-id="bookmark_card_url"]');
+      urlText.textContent = item.url;
+
+      // Navigation handler setup
+      const link = card.querySelector('.visit-link');
+      link.href = item.url;
+
+      // Delete flow trigger controllers
+      const normalActions = card.querySelector('.normal-actions');
+      const confirmActions = card.querySelector('.confirm-actions');
+      const loaderOverlay = card.querySelector('.loader-overlay');
+
+      const triggerDel = card.querySelector('.trigger-delete-btn');
+      const cancelDel = card.querySelector('.cancel-delete-btn');
+      const confirmDel = card.querySelector('.confirm-delete-btn');
+
+      // Toggles deletion prompt visible state safely inside layout
+      triggerDel.addEventListener('click', () => {
+        normalActions.classList.add('hidden');
+        confirmActions.classList.remove('hidden');
+      });
+
+      cancelDel.addEventListener('click', () => {
+        confirmActions.classList.add('hidden');
+        normalActions.classList.remove('hidden');
+      });
+
+      confirmDel.addEventListener('click', async () => {
+        loaderOverlay.classList.remove('hidden');
+        
+        try {
+          // Perform active Canva Sheets removal routine safely
+          const deleteResult = await window.dataSdk.delete(item);
+          if (!deleteResult.isOk) {
+            console.error("Storage deletion process failed:", deleteResult.error);
+            showFormError("Failed to delete bookmark. Please try again.");
+            loaderOverlay.classList.add('hidden');
+            confirmActions.classList.add('hidden');
+            normalActions.classList.remove('hidden');
+          }
+        } catch (err) {
+          console.error("Critical storage delete error caught:", err);
+          loaderOverlay.classList.add('hidden');
+        }
+      });
+    }
+
+    // Loading State Styling Helpers
+    function setFormLoadingState(isLoading) {
+      const btn = document.getElementById('submit-button');
+      const btnText = document.getElementById('submit-btn-text');
+      const spinner = document.getElementById('submit-spinner');
+      
+      const titleInput = document.getElementById('bookmark-title');
+      const urlInput = document.getElementById('bookmark-url');
+      const catInput = document.getElementById('bookmark-category');
+
+      if (isLoading) {
+        btn.disabled = true;
+        titleInput.disabled = true;
+        urlInput.disabled = true;
+        catInput.disabled = true;
+        btnText.classList.add('hidden');
+        spinner.classList.remove('hidden');
+        btn.className = "canva-button w-full flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-bold text-sm shadow-sm bg-indigo-400 text-white cursor-not-allowed";
+      } else {
+        btn.disabled = false;
+        titleInput.disabled = false;
+        urlInput.disabled = false;
+        catInput.disabled = false;
+        btnText.classList.remove('hidden');
+        spinner.classList.add('hidden');
+        btn.className = "canva-button w-full flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-bold text-sm shadow-sm hover:shadow active:scale-[0.98] bg-indigo-600 text-white hover:bg-indigo-700";
+      }
+    }
+
+    // Form Alert Controls
+    function showFormError(message) {
+      const banner = document.getElementById('form-error-banner');
+      const text = document.getElementById('error-message-text');
+      text.textContent = message;
+      banner.classList.remove('hidden');
+    }
+
+    function hideFormError() {
+      const banner = document.getElementById('form-error-banner');
+      banner.classList.add('hidden');
+    }
+
+    // Capacity Control Triggers (Enforces 999 limit block states)
+    function showLimitWarningState() {
+      const banner = document.getElementById('limit-reached-banner');
+      const btn = document.getElementById('submit-button');
+      banner.classList.remove('hidden');
+      btn.disabled = true;
+      btn.className = "book-button w-full flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-bold text-sm bg-slate-200 text-slate-400 cursor-not-allowed";
+    }
+
+    function hideLimitWarningState() {
+      const banner = document.getElementById('limit-reached-banner');
+      const btn = document.getElementById('submit-button');
+      banner.classList.add('hidden');
+      // Only restore button state if it's currently not locked in general loading sequence
+      if (btn.disabled && !document.getElementById('bookmark-title').disabled) {
+        btn.disabled = false;
+        btn.className = "bookmark-button w-full flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-bold text-sm shadow-sm hover:shadow active:scale-[0.98] bg-indigo-600 text-white hover:bg-indigo-700";
+      }
+    }
+
+    // Global Fallback Error Indicator
+    function showGlobalError(message) {
+      const container = document.getElementById('bookmarks-container');
+      const loadingState = document.getElementById('loading-state');
+      loadingState.classList.add('hidden');
+      container.classList.add('hidden');
+      
+      const emptyState = document.getElementById('empty-state');
+      emptyState.querySelector('[data-template-id="empty_state_title"]').textContent = "Connection Alert";
+      emptyState.querySelector('[data-template-id="empty_state_desc"]').textContent = message;
+      emptyState.classList.remove('hidden');
+    }
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a025e46ede112dfe',t:'MTc3OTg5NDA1OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
